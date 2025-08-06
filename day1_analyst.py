@@ -17,8 +17,18 @@ output_parser= StrOutputParser()
 
 chain= prompt | model | output_parser
 
-print("welcome to the market analysis tool")
+"""print("welcome to the market analysis tool")
 
 response=chain.invoke({"company_name": "meta",
                       "market_trend": "AI and AI agents future planing"})
-print(f"Response: {response}")
+print(f"Response: {response}")"""
+
+# now i am going to play with the stream method in the chain so i am going to comment out last part of the code for applyng of new stream method
+
+print("welcome to the market analysis tool that streaming the response")
+input_data={"company_name":"google",
+            "market_trend":"AI and LLMs"}
+for chunk in chain.stream(input_data):
+    sanitize_chunk= chunk.replace("\n", " ")
+    print(sanitize_chunk, end="", flush=True)
+    
