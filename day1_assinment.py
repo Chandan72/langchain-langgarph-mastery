@@ -32,8 +32,8 @@ input_data={
     
      
 ,
-    "language": "English",
-    "target_audience": "AI Developers"
+    "language": "Hindi",
+    "target_audience": "non-technical audience"
 }
 for chunk in chain.stream(input_data):
     sanitize_chunk = chunk.replace("\n", " ")
