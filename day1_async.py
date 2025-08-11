@@ -9,7 +9,7 @@ from langchain_core.output_parsers import StrOutputParser
 # --- Standard Setup (Same as before) ---
 load_dotenv()
 
-model = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest")
+model = ChatGoogleGenerativeAI(model="gemini-2.5-pro", temperature=0.1)
 prompt = ChatPromptTemplate.from_template(
     "Provide a brief, one-paragraph analysis of the impact of the '{market_trend}' "
     "to best oppertunities to start a new start-up using '{tech_name}' technologies."
