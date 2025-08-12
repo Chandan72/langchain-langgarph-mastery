@@ -5,7 +5,8 @@ load_dotenv()
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 from typing import List
-from langchain_core.memory import ConversationBufferMemory
+from langchain.memory import ConversationBufferMemory
+from langchain_core.output_parsers import StrOutputParser
 
 # --- Standard Setup ---
 model = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0.8)
@@ -24,6 +25,7 @@ print("--- Data Schema 'userProfile' defined successfully. ---")
 # --- Step 2: Instantiate the Parser ---
 parser = PydanticOutputParser(pydantic_object=userProfile)
 format_instructions = parser.get_format_instructions()
+string_parser= StrOutputParser()
 
 # --- Step 3: Craft the Prompt Template ---
 prompt=ChatPromptTemplate.from_messages(
@@ -36,32 +38,48 @@ prompt=ChatPromptTemplate.from_messages(
 ),
         ("human", " the conversation till now {history}n/n{input}"),
         ("ai", "Please provide your response in the following format:\n{format_instructions}")
-    ],
-    partial_variables={"format_instructions": format_instructions}
+    ]
 )
 
 print("--- Prompt Template created successfully. ---")
+chat_chain= prompt | model | string_parser
 
-Chain= prompt | model | parser
-async def user_profile_interview():
-    """
-    An asynchronous function to conduct a user profile interview.
-    """
-    print("--- Starting user profile interview... ---")
+summary_chain= prompt | model | parser
+def run_interview():
     memory = ConversationBufferMemory()
     
+    print("AI: Hello! I'm here to help build your professional profile. To start, what's your name?")
+    
     while True:
+        history_variables = memory.load_memory_variables({})
         user_input = input("You: ")
-        if user_input.lower() == "summarize":
-            break
         
-        response = await Chain.ainvoke({"input": user_input, "history": memory.get_history()})
-        print(f"AI: {response}")
-        memory.add_message("human", user_input)
-        memory.add_message("ai", response)
+        if user_input.lower() == 'exit':
+            print("AI: Goodbye!")
+            break
 
-    summary = await Chain.ainvoke({"input": "summarize", "history": memory.get_history()})
-    print(f"\nSummary of User Profile:\n{summary}")
+        # Check if we need to summarize or just chat
+        if user_input.lower() == 'summarize':
+            print("\nAI: Understood. Generating your profile summary...")
+            # Use the summary_chain
+            response = summary_chain.invoke({
+                "history": history_variables.get("history", ""),
+                "input": user_input,
+                "format_instructions": format_instructions
+            })
+            print("\n--- Your User Profile Summary ---")
+            print(response.model_dump_json(indent=2))
+            break
+        else:
+            # Use the chat_chain
+            response = chat_chain.invoke({
+                "history": history_variables.get("history", ""),
+                "input": user_input,
+                "format_instructions": "" # Pass empty instructions for chat
+            })
+            print(f"AI: {response}")
+            memory.save_context({"input": user_input}, {"output": response})
 
-
-
+# --- Run the main function ---
+if __name__ == "__main__":
+    run_interview()
